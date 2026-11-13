@@ -2,8 +2,6 @@
 rule  = misere
 first = human
 heaps = 1 2
-human = あなた
-cpu   = CPU
 
 B 1
 A 1

@@ -1,6 +1,7 @@
 //! CPU の思考と乱数．
 
 use crate::game::{Move, Rule, winning_move};
+use crate::i18n::{Lang, Msg};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -19,11 +20,11 @@ impl Difficulty {
         }
     }
 
-    pub fn label(self) -> &'static str {
+    pub fn label(self, lang: Lang) -> &'static str {
         match self {
-            Difficulty::Easy => "やさしい",
-            Difficulty::Normal => "ふつう",
-            Difficulty::Perfect => "最強 (必勝法)",
+            Difficulty::Easy => Msg::DifficultyEasy.text(lang),
+            Difficulty::Normal => Msg::DifficultyNormal.text(lang),
+            Difficulty::Perfect => Msg::DifficultyPerfect.text(lang),
         }
     }
 

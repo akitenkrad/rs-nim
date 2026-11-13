@@ -17,6 +17,7 @@ rs-nim replay examples/records/classic-1357.nimrec
 | `--paused` | Start playback paused |
 | `--exit-on-end` | Exit three seconds after reaching a finished record's end |
 | `--print` | Print the replay as text instead of starting the TUI |
+| `--lang <LANG>` | Display language: `en` (default) or `ja`. Also applies to `--print` |
 
 If the file cannot be read or contains an error, rs-nim prints the problem (with its line number) to standard error and exits with status 1 before the TUI starts.
 
@@ -33,7 +34,7 @@ If the file cannot be read or contains an error, rs-nim prints the problem (with
 | `b` | Toggle the nim-sum panel |
 | `q` / `Esc` / `Ctrl-C` | Quit |
 
-The status bar shows whether playback is running, the move number (`k/N`) and the current interval. When the last move ends the game, the result panel announces the winner by name; a record that stops mid-game ends with "end of record" (棋譜の終わり) instead.
+The status bar shows whether playback is running, the move number (`k/N`) and the current interval. When the last move ends the game, the result panel announces the winner by name; a record that stops mid-game ends with "End of record" instead.
 
 ### Text output
 
@@ -44,9 +45,9 @@ rs-nim replay examples/records/classic-1357.nimrec --print
 ```
 
 ```text
-手数 1: Alice D 2
-  山: A=1 B=3 C=5 D=5
-  ニム和: 2
+Move 1: Alice D 2
+  Heaps: A=1 B=3 C=5 D=5
+  Nim-sum: 2
   ...
 ```
 
@@ -58,7 +59,7 @@ During a game or on the result screen, press `s` to save the current game as `ni
 rs-nim --record-dir ~/nim-records
 ```
 
-Saved records use the default names あなた (you) and CPU; edit the `human` / `cpu` lines to rename the players.
+Saved records leave out the default names, so they are shown as You / CPU in English and あなた / CPU in Japanese. Add `human` / `cpu` lines to name the players.
 
 ## The `.nimrec` format
 
@@ -69,7 +70,7 @@ A record is UTF-8 text: a header of `key = value` lines followed by one move per
 rule  = normal     # normal | misere   (default: normal)
 first = human      # human | cpu       (default: human)
 heaps = 1 3 5 7    # required; separated by spaces or commas
-human = Alice      # optional display name of the "human" side (default: あなた)
+human = Alice      # optional display name of the "human" side (default: You / あなた)
 cpu   = Bob        # optional display name of the "cpu" side   (default: CPU)
 
 D 2                # move: heap, then number of stones to take

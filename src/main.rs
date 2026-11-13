@@ -1,6 +1,7 @@
 mod ai;
 mod app;
 mod game;
+mod i18n;
 mod record;
 mod ui;
 
@@ -13,7 +14,8 @@ use std::time::{Duration, Instant};
 use clap::{Parser, Subcommand};
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 
-use crate::game::{Game, Side, nim_sum};
+use crate::game::{Game, nim_sum};
+use crate::i18n::{Lang, Msg};
 use crate::record::Record;
 
 const TICK: Duration = Duration::from_millis(33);
@@ -25,6 +27,10 @@ struct Cli {
     /// Directory used when saving records from a normal game.
     #[arg(long, default_value = ".", global = true)]
     record_dir: PathBuf,
+
+    /// Language used by the TUI and printed replay output.
+    #[arg(long, default_value = "en", global = true)]
+    lang: Lang,
 
     #[command(subcommand)]
     command: Option<Command>,
@@ -69,6 +75,7 @@ fn execute(cli: Cli) -> Result<(), String> {
     match cli.command {
         None => {
             let mut app = app::App::new();
+            app.lang = cli.lang;
             app.set_record_dir(cli.record_dir);
             run_tui(app).map_err(|error| error.to_string())
         }
@@ -83,11 +90,11 @@ fn execute(cli: Cli) -> Result<(), String> {
             let record = record::parse(&text).map_err(|error| format!("{}: {error}", file.display()))?;
             if print {
                 io::stdout()
-                    .write_all(format_replay(&record).as_bytes())
+                    .write_all(format_replay(&record, cli.lang).as_bytes())
                     .map_err(|error| format!("failed to write replay: {error}"))?;
                 return Ok(());
             }
-            let app = app::App::new_replay(record, Duration::from_millis(interval), paused, exit_on_end);
+            let app = app::App::new_replay(record, Duration::from_millis(interval), paused, exit_on_end, cli.lang);
             run_tui(app).map_err(|error| error.to_string())
         }
     }
@@ -105,7 +112,7 @@ fn read_record_text(path: &Path) -> Result<String, String> {
     }
 }
 
-fn format_replay(record: &Record) -> String {
+fn format_replay(record: &Record, lang: Lang) -> String {
     let mut output = String::new();
     let mut game = Game::new(record.heaps.clone(), record.rule, record.first);
 
@@ -114,29 +121,20 @@ fn format_replay(record: &Record) -> String {
         game.apply(mv).expect("moves in a parsed record are always legal");
         let _ = writeln!(
             output,
-            "手数 {}: {} {} {}",
-            index + 1,
-            record_side_name(record, side),
-            ui::heap_label(mv.heap),
-            mv.take
+            "{}",
+            lang.print_move(index + 1, record.side_name(side, lang), ui::heap_label(mv.heap), mv.take)
         );
-        let _ = writeln!(output, "  山: {}", format_heaps(&game.heaps));
-        let _ = writeln!(output, "  ニム和: {}", nim_sum(&game.heaps));
+        let _ = writeln!(output, "{}", lang.print_heaps(&format_heaps(&game.heaps)));
+        let _ = writeln!(output, "{}", lang.print_nim_sum(nim_sum(&game.heaps)));
     }
 
     if let Some(winner) = game.winner() {
-        let _ = writeln!(output, "勝者: {}", record_side_name(record, winner));
+        let _ = writeln!(output, "{}", lang.print_winner(record.side_name(winner, lang)));
     } else {
-        output.push_str("棋譜の終わり（未終局）\n");
+        output.push_str(Msg::PrintEndUnfinished.text(lang));
+        output.push('\n');
     }
     output
-}
-
-fn record_side_name(record: &Record, side: Side) -> &str {
-    match side {
-        Side::Human => &record.names[0],
-        Side::Cpu => &record.names[1],
-    }
 }
 
 fn format_heaps(heaps: &[u32]) -> String {
@@ -189,6 +187,7 @@ mod tests {
 
     use super::*;
     use crate::game::{Move, Rule, Side};
+    use crate::i18n::Lang;
     use crate::record::Record;
 
     #[test]
@@ -196,7 +195,17 @@ mod tests {
         let cli = Cli::try_parse_from(["rs-nim"]).unwrap();
 
         assert_eq!(cli.record_dir, PathBuf::from("."));
+        assert_eq!(cli.lang, Lang::En);
         assert!(cli.command.is_none());
+    }
+
+    #[test]
+    fn cli_accepts_global_language_before_or_after_replay() {
+        let normal = Cli::try_parse_from(["rs-nim", "--lang", "JA"]).unwrap();
+        assert_eq!(normal.lang, Lang::Ja);
+
+        let replay = Cli::try_parse_from(["rs-nim", "replay", "game.nimrec", "--lang", "ja"]).unwrap();
+        assert_eq!(replay.lang, Lang::Ja);
     }
 
     #[test]
@@ -261,19 +270,25 @@ mod tests {
             rule: Rule::Normal,
             first: Side::Human,
             heaps: vec![1, 1],
-            names: ["Alice".into(), "Bob".into()],
+            names: [Some("Alice".into()), Some("Bob".into())],
             moves: vec![Move { heap: 0, take: 1 }, Move { heap: 1, take: 1 }],
         };
 
-        let output = format_replay(&record);
+        let output = format_replay(&record, Lang::En);
 
-        assert!(output.contains("手数 1: Alice A 1"), "{output}");
-        assert!(output.contains("山: A=0 B=1"), "{output}");
-        assert!(output.contains("ニム和: 1"), "{output}");
-        assert!(output.contains("手数 2: Bob B 1"), "{output}");
-        assert!(output.contains("山: A=0 B=0"), "{output}");
-        assert!(output.contains("ニム和: 0"), "{output}");
-        assert!(output.contains("勝者: Bob"), "{output}");
+        assert!(output.contains("Move 1: Alice A 1"), "{output}");
+        assert!(output.contains("Heaps: A=0 B=1"), "{output}");
+        assert!(output.contains("Nim-sum: 1"), "{output}");
+        assert!(output.contains("Move 2: Bob B 1"), "{output}");
+        assert!(output.contains("Heaps: A=0 B=0"), "{output}");
+        assert!(output.contains("Nim-sum: 0"), "{output}");
+        assert!(output.contains("Winner: Bob"), "{output}");
+
+        let ja = format_replay(&record, Lang::Ja);
+        assert!(ja.contains("手数 1: Alice A 1"), "{ja}");
+        assert!(ja.contains("山: A=0 B=1"), "{ja}");
+        assert!(ja.contains("ニム和: 1"), "{ja}");
+        assert!(ja.contains("勝者: Bob"), "{ja}");
     }
 
     #[test]
@@ -282,14 +297,30 @@ mod tests {
             rule: Rule::Normal,
             first: Side::Human,
             heaps: vec![2],
-            names: ["Alice".into(), "Bob".into()],
+            names: [Some("Alice".into()), Some("Bob".into())],
             moves: vec![Move { heap: 0, take: 1 }],
         };
 
-        let output = format_replay(&record);
+        let output = format_replay(&record, Lang::En);
 
-        assert!(output.contains("手数 1: Alice A 1"), "{output}");
-        assert!(output.contains("山: A=1"), "{output}");
-        assert!(output.contains("棋譜の終わり（未終局）"), "{output}");
+        assert!(output.contains("Move 1: Alice A 1"), "{output}");
+        assert!(output.contains("Heaps: A=1"), "{output}");
+        assert!(output.contains("End of record (unfinished)"), "{output}");
+
+        let ja = format_replay(&record, Lang::Ja);
+        assert!(ja.contains("棋譜の終わり（未終局）"), "{ja}");
+    }
+
+    #[test]
+    fn print_output_localizes_omitted_default_names() {
+        let record = record::parse("heaps = 1\nA 1\n").unwrap();
+
+        let en = format_replay(&record, Lang::En);
+        assert!(en.contains("Move 1: You A 1"), "{en}");
+        assert!(en.contains("Winner: You"), "{en}");
+
+        let ja = format_replay(&record, Lang::Ja);
+        assert!(ja.contains("手数 1: あなた A 1"), "{ja}");
+        assert!(ja.contains("勝者: あなた"), "{ja}");
     }
 }

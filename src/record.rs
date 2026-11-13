@@ -5,6 +5,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::game::{Game, Move, MoveError, Rule, Side};
+use crate::i18n::Lang;
 
 /// 棋譜で扱える山の最大数．90x26 の盤面に収まる列数に合わせる．
 pub const MAX_HEAPS: usize = 6;
@@ -19,7 +20,7 @@ pub struct Record {
     pub first: Side,
     pub heaps: Vec<u32>,
     /// `[人間側, CPU側]` の表示名．
-    pub names: [String; 2],
+    pub names: [Option<String>; 2],
     pub moves: Vec<Move>,
 }
 
@@ -27,6 +28,13 @@ impl Record {
     /// `ply` 手を適用した局面を返す．棋譜の範囲外なら `None`．
     pub fn game_at(&self, ply: usize) -> Option<Game> {
         game_at(self, ply)
+    }
+
+    pub fn side_name(&self, side: Side, lang: Lang) -> &str {
+        match side {
+            Side::Human => self.names[0].as_deref().unwrap_or_else(|| lang.default_human_name()),
+            Side::Cpu => self.names[1].as_deref().unwrap_or_else(|| lang.default_cpu_name()),
+        }
     }
 }
 
@@ -171,7 +179,7 @@ pub fn parse(text: &str) -> Result<Record, RecordError> {
     let mut rule = Rule::Normal;
     let mut first = Side::Human;
     let mut heaps: Option<Vec<u32>> = None;
-    let mut names = ["あなた".to_string(), "CPU".to_string()];
+    let mut names = [None, None];
     let mut moves = Vec::new();
     let mut game: Option<Game> = None;
     let mut seen_keys = HashSet::new();
@@ -234,7 +242,7 @@ pub fn parse(text: &str) -> Result<Record, RecordError> {
                     if value.is_empty() {
                         return Err(RecordError::EmptyName { line, key: key.to_string() });
                     }
-                    names[usize::from(key == "cpu")] = value.to_string();
+                    names[usize::from(key == "cpu")] = Some(value.to_string());
                 }
                 _ => unreachable!(),
             }
@@ -355,10 +363,20 @@ pub fn to_text(record: &Record) -> String {
         Side::Cpu => "cpu",
     };
     let heaps = record.heaps.iter().map(u32::to_string).collect::<Vec<_>>().join(" ");
-    let mut text = format!(
-        "# rs-nim record v1\nrule  = {rule}\nfirst = {first}\nheaps = {heaps}\nhuman = {}\ncpu   = {}\n\n",
-        record.names[0], record.names[1]
-    );
+    let mut text = format!("# rs-nim record v1\nrule  = {rule}\nfirst = {first}\nheaps = {heaps}\n");
+    if let Some(name) = record.names[0]
+        .as_deref()
+        .filter(|name| *name != Lang::En.default_human_name() && *name != Lang::Ja.default_human_name())
+    {
+        text.push_str(&format!("human = {name}\n"));
+    }
+    if let Some(name) = record.names[1]
+        .as_deref()
+        .filter(|name| *name != Lang::En.default_cpu_name() && *name != Lang::Ja.default_cpu_name())
+    {
+        text.push_str(&format!("cpu   = {name}\n"));
+    }
+    text.push('\n');
     for mv in &record.moves {
         text.push_str(&format!("{} {}\n", heap_label(mv.heap), mv.take));
     }
@@ -381,6 +399,7 @@ pub fn game_at(record: &Record, ply: usize) -> Option<Game> {
 mod tests {
     use super::*;
     use crate::game::{Move, Rule, Side};
+    use crate::i18n::Lang;
 
     fn error_line(error: &RecordError) -> usize {
         error.line()
@@ -404,7 +423,7 @@ d 2
         assert_eq!(record.rule, Rule::Misere);
         assert_eq!(record.first, Side::Cpu);
         assert_eq!(record.heaps, vec![1, 3, 5, 7]);
-        assert_eq!(record.names, ["Alice", "Bob"]);
+        assert_eq!(record.names, [Some("Alice".into()), Some("Bob".into())]);
         assert_eq!(
             record.moves,
             vec![Move { heap: 0, take: 1 }, Move { heap: 3, take: 2 }, Move { heap: 1, take: 3 },]
@@ -422,9 +441,28 @@ C 1 # labels are case-insensitive
         let record = parse(input).unwrap();
         assert_eq!(record.rule, Rule::Normal);
         assert_eq!(record.first, Side::Human);
-        assert_eq!(record.names, ["あなた", "CPU"]);
+        assert!(record.names.iter().all(Option::is_none));
+        assert_eq!(record.side_name(Side::Human, Lang::En), "You");
+        assert_eq!(record.side_name(Side::Human, Lang::Ja), "あなた");
+        assert_eq!(record.side_name(Side::Cpu, Lang::En), "CPU");
         assert_eq!(record.heaps, vec![3, 4, 5]);
         assert_eq!(record.moves, vec![Move { heap: 0, take: 2 }, Move { heap: 2, take: 1 }]);
+    }
+
+    #[test]
+    fn serialization_omits_unspecified_and_default_names() {
+        let mut record = parse("heaps = 1\n").unwrap();
+        let text = to_text(&record);
+        assert!(!text.contains("human ="), "{text}");
+        assert!(!text.contains("cpu   ="), "{text}");
+
+        record.names = [Some("あなた".into()), Some("CPU".into())];
+        let text = to_text(&record);
+        assert!(!text.contains("human ="), "{text}");
+        assert!(!text.contains("cpu   ="), "{text}");
+
+        record.names[0] = Some("Alice".into());
+        assert!(to_text(&record).contains("human = Alice"));
     }
 
     #[test]
@@ -518,7 +556,7 @@ C 1 # labels are case-insensitive
             rule: Rule::Misere,
             first: Side::Cpu,
             heaps: vec![0, 2, 9],
-            names: ["山田 Alice".to_string(), "CPU Bob".to_string()],
+            names: [Some("山田 Alice".to_string()), Some("CPU Bob".to_string())],
             moves: vec![Move { heap: 2, take: 7 }, Move { heap: 1, take: 1 }],
         };
         let text = to_text(&original);

@@ -1,5 +1,7 @@
 //! Nim のルールと必勝法 (UI から独立した純粋なロジック)．
 
+use crate::i18n::{Lang, Msg};
+
 /// 1手: どの山から何個取るか．
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Move {
@@ -24,17 +26,17 @@ impl Rule {
         }
     }
 
-    pub fn label(self) -> &'static str {
+    pub fn label(self, lang: Lang) -> &'static str {
         match self {
-            Rule::Normal => "通常 (最後の1個を取ると勝ち)",
-            Rule::Misere => "ミゼール (最後の1個を取ると負け)",
+            Rule::Normal => Msg::RuleNormal.text(lang),
+            Rule::Misere => Msg::RuleMisere.text(lang),
         }
     }
 
-    pub fn short(self) -> &'static str {
+    pub fn short(self, lang: Lang) -> &'static str {
         match self {
-            Rule::Normal => "通常",
-            Rule::Misere => "ミゼール",
+            Rule::Normal => Msg::RuleNormalShort.text(lang),
+            Rule::Misere => Msg::RuleMisereShort.text(lang),
         }
     }
 }
@@ -53,10 +55,10 @@ impl Side {
         }
     }
 
-    pub fn label(self) -> &'static str {
+    pub fn label(self, lang: Lang) -> &'static str {
         match self {
-            Side::Human => "あなた",
-            Side::Cpu => "CPU",
+            Side::Human => lang.default_human_name(),
+            Side::Cpu => lang.default_cpu_name(),
         }
     }
 }

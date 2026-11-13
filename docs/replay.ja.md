@@ -17,6 +17,7 @@ rs-nim replay examples/records/classic-1357.nimrec
 | `--paused` | 一時停止の状態で開始 |
 | `--exit-on-end` | 終局した棋譜の最後まで再生したら，3 秒後に終了 |
 | `--print` | TUI を起動せず，再生内容をテキストで出力 |
+| `--lang <LANG>` | 表示言語．`en`（既定）か `ja`．`--print` の出力にも効く |
 
 ファイルが読めない場合や棋譜に誤りがある場合は，TUI を起動する前に問題点（行番号付き）を標準エラーに出し，終了コード 1 で終わります．
 
@@ -40,7 +41,7 @@ rs-nim replay examples/records/classic-1357.nimrec
 `--print` は棋譜を検査し，各手と，その手の後の山とニム和を出力します．ファイルの確認やスクリプトからの利用に便利です．
 
 ```sh
-rs-nim replay examples/records/classic-1357.nimrec --print
+rs-nim --lang ja replay examples/records/classic-1357.nimrec --print
 ```
 
 ```text
@@ -58,7 +59,7 @@ rs-nim replay examples/records/classic-1357.nimrec --print
 rs-nim --record-dir ~/nim-records
 ```
 
-保存した棋譜の名前は既定の「あなた」と「CPU」です．`human` / `cpu` の行を書き換えれば名前を変えられます．
+保存した棋譜には既定の名前を書きません．そのため英語では You / CPU，日本語では あなた / CPU と表示されます．名前を付けるには `human` / `cpu` の行を追加します．
 
 ## `.nimrec` 形式
 
@@ -69,7 +70,7 @@ rs-nim --record-dir ~/nim-records
 rule  = normal     # normal | misere   (default: normal)
 first = human      # human | cpu       (default: human)
 heaps = 1 3 5 7    # required; separated by spaces or commas
-human = Alice      # optional display name of the "human" side (default: あなた)
+human = Alice      # optional display name of the "human" side (default: You / あなた)
 cpu   = Bob        # optional display name of the "cpu" side   (default: CPU)
 
 D 2                # move: heap, then number of stones to take

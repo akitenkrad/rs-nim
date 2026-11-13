@@ -21,6 +21,7 @@ Run `rs-nim` (or `cargo run --release`) to open the title screen. Change the set
 | `r` | Rule | Normal / Misère |
 | `f` | First player | You / CPU |
 | `p` | Heap layout | Random (3–5 heaps of 1–9 stones) / 1-3-5-7 (classic) |
+| `l` | Language | English / 日本語 |
 
 The CPU plays the winning move (see [strategy](strategy.md)) with a probability that depends on the difficulty: 20 % on Easy, 65 % on Normal and 100 % on Perfect. When no winning move exists, Perfect takes a single stone from the largest heap and waits for you to slip; the other levels play a random legal move.
 
@@ -43,6 +44,10 @@ The selected stones are highlighted before you commit. Removed stones float up, 
 ## The nim-sum panel
 
 Press `b` to show each heap in binary together with their XOR (the *nim-sum*). Bit columns that contain an odd number of 1s are highlighted — those are exactly the columns you need to fix to hand your opponent a losing position. See [strategy](strategy.md) for why.
+
+## Language
+
+The interface is in English by default. Switch to Japanese with `l` on the title screen, or start the game with `--lang ja` (this also works for `replay`).
 
 ## Terminal requirements
 
