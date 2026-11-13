@@ -256,13 +256,16 @@ fn draw_game(frame: &mut Frame, app: &App, area: Rect) {
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
     let turn = app.game.to_move;
     if let Some(replay) = app.replay() {
-        let state = if replay.paused {
+        let finished = replay.position == replay.record.moves.len();
+        let state = if finished {
+            Msg::Finished.text(app.lang)
+        } else if replay.paused {
             Msg::Paused.text(app.lang)
         } else {
             Msg::Playing.text(app.lang)
         };
         let remaining: u32 = app.game.heaps.iter().sum();
-        let spans = vec![
+        let mut spans = vec![
             Span::styled(
                 format!(" {} ", Msg::AppName.text(app.lang)),
                 Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD),
@@ -272,26 +275,30 @@ fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
             Span::styled(format!("{}/{}", replay.position, replay.record.moves.len()), fg(TEXT)),
             Span::styled(format!("   {} ", Msg::SpeedLabel.text(app.lang)), fg(DIM)),
             Span::styled(format!("{}ms", replay.interval.as_millis()), fg(TEXT)),
-            Span::styled(
+        ];
+        if !finished && app.screen == Screen::Playing {
+            spans.push(Span::styled(
                 format!("   {}", app.lang.turn_status(app.side_name(turn))),
                 fg(side_color(turn)).add_modifier(Modifier::BOLD),
-            ),
+            ));
+        }
+        spans.extend([
             Span::styled(format!("   {} ", Msg::RemainingLabel.text(app.lang)), fg(DIM)),
             Span::styled(app.lang.remaining(remaining), fg(TEXT)),
-        ];
+        ]);
         frame.render_widget(Paragraph::new(Line::from(spans)).block(panel("")), area);
         return;
     }
-    let mut spans = vec![
-        Span::styled(
-            format!(" {} ", Msg::AppName.text(app.lang)),
-            Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(
+    let mut spans = vec![Span::styled(
+        format!(" {} ", Msg::AppName.text(app.lang)),
+        Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD),
+    )];
+    if app.screen == Screen::Playing {
+        spans.push(Span::styled(
             format!("   {}", app.lang.turn_status(app.side_name(turn))),
             fg(side_color(turn)).add_modifier(Modifier::BOLD),
-        ),
-    ];
+        ));
+    }
     if app.screen == crate::app::Screen::Playing && turn == Side::Cpu {
         spans.push(Span::styled(format!(" {}", spinner(app.frame)), fg(CPU)));
     }
@@ -509,7 +516,9 @@ fn draw_binary(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_info(frame: &mut Frame, app: &App, area: Rect) {
     if let Some(replay) = app.replay() {
-        let state = if replay.paused {
+        let state = if replay.position == replay.record.moves.len() {
+            Msg::Finished.text(app.lang)
+        } else if replay.paused {
             Msg::PausedLong.text(app.lang)
         } else {
             Msg::AutoPlaying.text(app.lang)
@@ -626,7 +635,7 @@ fn draw_result(frame: &mut Frame, app: &App, area: Rect) {
             Line::raw(""),
             Line::styled(app.message.clone(), fg(color).add_modifier(Modifier::BOLD)),
             Line::raw(""),
-            Line::styled(app.lang.result_summary(app.game.rule.short(app.lang), app.game.history.len()), fg(TEXT)),
+            Line::styled(app.lang.replay_result_summary(app.game.history.len()), fg(TEXT)),
             Line::raw(""),
             Line::raw(""),
             Line::from(vec![
@@ -859,6 +868,46 @@ mod tests {
     }
 
     #[test]
+    fn replay_end_is_finished_without_turn_or_rule_and_step_back_restores_playing() {
+        for (lang, finished, playing, turn, rule_summary, moves) in [
+            (Lang::En, "Finished", "Playing", "'s turn", "Normal   3 moves", "3 moves"),
+            (Lang::Ja, "再生終了", "再生中", "手番 ", "通常   手数 3", "手数 3"),
+        ] {
+            let mut app = App::new_replay(replay_record(true), Duration::from_millis(1_500), false, false, lang);
+            app.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::End));
+
+            let finished_screen = render(&app, MIN_WIDTH, MIN_HEIGHT);
+            let finished_header = finished_screen.lines().nth(1).unwrap();
+            assert!(finished_header.contains(finished), "{finished_screen}");
+            assert!(!finished_header.contains(turn), "{finished_screen}");
+            assert!(finished_screen.contains(moves), "{finished_screen}");
+            assert!(!finished_screen.contains(rule_summary), "{finished_screen}");
+            assert!(!finished_screen.contains("Auto-playing"), "{finished_screen}");
+            assert!(!finished_screen.contains("自動再生中"), "{finished_screen}");
+
+            app.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::Left));
+            let playing_screen = render(&app, MIN_WIDTH, MIN_HEIGHT);
+            let playing_header = playing_screen.lines().nth(1).unwrap();
+            assert!(playing_header.contains(playing), "{playing_screen}");
+            assert!(!playing_header.contains(finished), "{playing_screen}");
+        }
+    }
+
+    #[test]
+    fn normal_game_over_header_omits_turn_indicator() {
+        for (lang, turn) in [(Lang::En, "turn"), (Lang::Ja, "手番")] {
+            let mut app = App::new_with_lang(lang);
+            app.game = crate::game::Game::new(vec![1], Rule::Normal, Side::Human);
+            app.game.apply(Move { heap: 0, take: 1 }).unwrap();
+            app.screen = Screen::GameOver;
+
+            let screen = render(&app, MIN_WIDTH, MIN_HEIGHT);
+            let header = screen.lines().nth(1).unwrap();
+            assert!(!header.contains(turn), "{screen}");
+        }
+    }
+
+    #[test]
     fn renders_unfinished_replay_end_at_minimum_size() {
         for (lang, result) in [(Lang::En, "End of record"), (Lang::Ja, "棋譜の終わり")] {
             let mut app = App::new_replay(replay_record(false), Duration::from_millis(1_500), true, false, lang);
@@ -915,6 +964,10 @@ mod tests {
                 app.on_tick();
             }
             println!("{}", render(&app, 90, 26));
+
+            let mut replay = App::new_replay(replay_record(true), Duration::from_millis(1_500), false, false, lang);
+            replay.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::End));
+            println!("replay end\n{}", render(&replay, 90, 26));
         }
     }
 }

@@ -156,10 +156,10 @@ impl Lang {
         }
     }
 
-    pub fn result_summary(self, rule: &str, moves: usize) -> String {
+    pub fn replay_result_summary(self, moves: usize) -> String {
         match self {
-            Self::En => format!("{rule}   {moves} moves"),
-            Self::Ja => format!("{rule}   手数 {moves}"),
+            Self::En => format!("{moves} moves"),
+            Self::Ja => format!("手数 {moves}"),
         }
     }
 
@@ -215,6 +215,7 @@ pub enum Msg {
     HeapsPanel,
     Paused,
     Playing,
+    Finished,
     MoveLabel,
     SpeedLabel,
     RemainingLabel,
@@ -294,6 +295,7 @@ impl Msg {
         Self::HeapsPanel,
         Self::Paused,
         Self::Playing,
+        Self::Finished,
         Self::MoveLabel,
         Self::SpeedLabel,
         Self::RemainingLabel,
@@ -404,6 +406,8 @@ impl Msg {
             (Self::Paused, Lang::Ja) => "一時停止",
             (Self::Playing, Lang::En) => "Playing",
             (Self::Playing, Lang::Ja) => "再生中",
+            (Self::Finished, Lang::En) => "Finished",
+            (Self::Finished, Lang::Ja) => "再生終了",
             (Self::MoveLabel, Lang::En) => "Move",
             (Self::MoveLabel, Lang::Ja) => "手数",
             (Self::SpeedLabel, Lang::En) => "Speed",
