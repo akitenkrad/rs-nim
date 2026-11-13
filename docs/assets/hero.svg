@@ -1,0 +1,150 @@
+<svg width="100%" viewBox="0 0 1200 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hero-title hero-desc">
+  <title id="hero-title">rs-nim — Nim in your terminal</title>
+  <desc id="hero-desc">A terminal Nim game with four heaps of gem-like stones, a binary XOR nim-sum panel, and playback controls for a game.nimrec recording.</desc>
+
+  <style>
+    .title,
+    .subtitle,
+    .eyebrow,
+    .label,
+    .small {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .title { font-size: 58px; font-weight: 700; letter-spacing: -1.5px; fill: #2C2C2A; }
+    .subtitle { font-size: 17px; font-weight: 400; fill: #5F5E5A; }
+    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2.4px; fill: #0F6E56; }
+    .label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; fill: #5F5E5A; }
+    .small { font-size: 12px; font-weight: 600; fill: #5F5E5A; }
+    .binary { font-size: 15px; font-weight: 600; letter-spacing: 3px; fill: #2C2C2A; }
+    .binary-result { font-size: 15px; font-weight: 700; letter-spacing: 3px; fill: #534AB7; }
+    .file-name { font-size: 12px; font-weight: 600; fill: #2C2C2A; }
+
+    .terminal { fill: #F8F7F3; stroke: #5F5E5A; stroke-width: 1.2; }
+    .panel { fill: #F1EFE8; stroke: #C7C5BD; stroke-width: 0.8; }
+    .panel-line { stroke: #C7C5BD; stroke-width: 0.8; }
+    .grid { stroke: #C7C5BD; stroke-width: 0.7; opacity: 0.55; }
+    .stone { fill: #E1F5EE; stroke: #0F6E56; stroke-width: 1; }
+    .stone-shine { fill: none; stroke: #0F6E56; stroke-width: 0.7; opacity: 0.55; }
+    .result-panel { fill: #EEEDFE; stroke: #534AB7; stroke-width: 0.9; }
+    .tick { stroke: #5F5E5A; stroke-width: 1.4; stroke-linecap: round; }
+    .tick-active { stroke: #0F6E56; stroke-width: 2.2; stroke-linecap: round; }
+    .play { fill: #0F6E56; }
+    .file { fill: #F1EFE8; stroke: #5F5E5A; stroke-width: 1; stroke-linejoin: round; }
+    .rule { stroke: #0F6E56; stroke-width: 2; stroke-linecap: round; }
+    .dot { fill: #5F5E5A; opacity: 0.5; }
+
+    @media (prefers-color-scheme: dark) {
+      .title { fill: #E5E5E2; }
+      .subtitle { fill: #B4B2A9; }
+      .eyebrow { fill: #5DCAA5; }
+      .label { fill: #B4B2A9; }
+      .small { fill: #C7C5BD; }
+      .binary { fill: #E5E5E2; }
+      .binary-result { fill: #AFA9EC; }
+      .file-name { fill: #E5E5E2; }
+
+      .terminal { fill: #20201E; stroke: #B4B2A9; }
+      .panel { fill: #3A3A37; stroke: #5F5E5A; }
+      .panel-line { stroke: #5F5E5A; }
+      .grid { stroke: #5F5E5A; }
+      .stone { fill: #085041; stroke: #5DCAA5; }
+      .stone-shine { stroke: #5DCAA5; }
+      .result-panel { fill: #3C3489; stroke: #AFA9EC; }
+      .tick { stroke: #B4B2A9; }
+      .tick-active { stroke: #5DCAA5; }
+      .play { fill: #5DCAA5; }
+      .file { fill: #3A3A37; stroke: #B4B2A9; }
+      .rule { stroke: #5DCAA5; }
+      .dot { fill: #B4B2A9; }
+    }
+  </style>
+
+  <defs>
+    <g id="gem-stone">
+      <path class="stone" d="M5 1 H36 L43 7 L36 13 H5 L0 7 Z"/>
+      <path class="stone-shine" d="M6 4 H34 L38 7 L34 10 H6"/>
+    </g>
+  </defs>
+
+  <!-- Title block -->
+  <text class="eyebrow" x="50" y="100">TERMINAL STRATEGY GAME</text>
+  <text class="title" x="46" y="166">rs-nim</text>
+  <text class="subtitle" x="50" y="207">Nim in your terminal — play, analyse, replay</text>
+  <path class="rule" d="M50 236 H420"/>
+
+  <!-- Terminal frame -->
+  <rect class="terminal" x="486" y="28" width="674" height="304" rx="14"/>
+  <path class="panel-line" d="M486 74 H1160"/>
+  <circle class="dot" cx="510" cy="51" r="4"/>
+  <circle class="dot" cx="526" cy="51" r="4"/>
+  <circle class="dot" cx="542" cy="51" r="4"/>
+  <text class="label" x="571" y="55">RS-NIM · NORMAL</text>
+  <text class="small mono" x="1128" y="55" text-anchor="end">turn 6</text>
+
+  <!-- Heap grid -->
+  <rect class="panel" x="508" y="90" width="354" height="158" rx="8"/>
+  <text class="label" x="524" y="112">HEAPS</text>
+  <path class="grid" d="M524 126 H846 M524 144 H846 M524 162 H846 M524 180 H846 M524 198 H846 M524 216 H846"/>
+  <path class="grid" d="M587 122 V222 M662 122 V222 M737 122 V222 M812 122 V222"/>
+
+  <!-- A: 1 -->
+  <use href="#gem-stone" x="543" y="201"/>
+  <text class="small mono" x="565" y="239" text-anchor="middle">A · 1</text>
+
+  <!-- B: 3 -->
+  <use href="#gem-stone" x="618" y="201"/>
+  <use href="#gem-stone" x="618" y="186"/>
+  <use href="#gem-stone" x="618" y="171"/>
+  <text class="small mono" x="640" y="239" text-anchor="middle">B · 3</text>
+
+  <!-- C: 5 -->
+  <use href="#gem-stone" x="693" y="201"/>
+  <use href="#gem-stone" x="693" y="186"/>
+  <use href="#gem-stone" x="693" y="171"/>
+  <use href="#gem-stone" x="693" y="156"/>
+  <use href="#gem-stone" x="693" y="141"/>
+  <text class="small mono" x="715" y="239" text-anchor="middle">C · 5</text>
+
+  <!-- D: 7 -->
+  <use href="#gem-stone" x="768" y="201"/>
+  <use href="#gem-stone" x="768" y="186"/>
+  <use href="#gem-stone" x="768" y="171"/>
+  <use href="#gem-stone" x="768" y="156"/>
+  <use href="#gem-stone" x="768" y="141"/>
+  <use href="#gem-stone" x="768" y="126"/>
+  <use href="#gem-stone" x="768" y="111"/>
+  <text class="small mono" x="790" y="239" text-anchor="middle">D · 7</text>
+
+  <!-- Binary XOR panel -->
+  <rect class="panel" x="880" y="90" width="254" height="158" rx="8"/>
+  <text class="label" x="896" y="112">NIM-SUM · XOR</text>
+  <text class="small mono" x="902" y="135">A</text>
+  <text class="binary mono" x="1099" y="135" text-anchor="end">001</text>
+  <text class="small mono" x="902" y="157">B</text>
+  <text class="binary mono" x="1099" y="157" text-anchor="end">011</text>
+  <text class="small mono" x="902" y="179">C</text>
+  <text class="binary mono" x="1099" y="179" text-anchor="end">101</text>
+  <text class="small mono" x="902" y="201">D</text>
+  <text class="binary mono" x="1099" y="201" text-anchor="end">111</text>
+  <rect class="result-panel" x="896" y="210" width="222" height="28" rx="5"/>
+  <text class="small mono" x="906" y="229">RESULT</text>
+  <text class="binary-result mono" x="1101" y="229" text-anchor="end">000</text>
+
+  <!-- Replay strip -->
+  <rect class="panel" x="508" y="263" width="404" height="48" rx="8"/>
+  <path class="play" d="M527 279 L527 297 L541 288 Z"/>
+  <text class="small mono" x="552" y="293">3/7</text>
+  <path class="tick-active" d="M614 281 V297 M650 281 V297 M686 281 V297"/>
+  <path class="tick" d="M722 281 V297 M758 281 V297 M794 281 V297 M830 281 V297 M866 281 V297"/>
+  <path class="tick-active" d="M614 305 H686"/>
+
+  <!-- Record file -->
+  <rect class="panel" x="930" y="263" width="204" height="48" rx="8"/>
+  <path class="file" d="M946 271 H963 L971 279 V303 H946 Z M963 271 V279 H971"/>
+  <path class="panel-line" d="M951 286 H966 M951 292 H966"/>
+  <text class="file-name mono" x="982" y="293">game.nimrec</text>
+</svg>

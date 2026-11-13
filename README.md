@@ -1,58 +1,39 @@
+<p align="center"><img src="docs/assets/hero.svg" width="100%"></p>
+
+**English** | [日本語](README.ja.md)
+
 # rs-nim
 
-ターミナルで遊ぶ Nim．[ratatui](https://ratatui.rs) で描画し，CPU と対戦できます．
+Nim in your terminal. Play against a CPU under the normal or misère rule, watch the nim-sum in binary to learn the winning strategy, and replay recorded games from `.nimrec` files — handy for recording videos. Built with [ratatui](https://ratatui.rs).
 
-- 石は背景色付きのセルで描くので，フォントに依存せず立体的な「宝石」に見えます
-- 取った石は浮かび上がりながら細く暗くなって消えます
-- ニム和パネル (`b`) で各山の2進数と XOR を表示し，奇数個の 1 がある桁を強調します
-- 勝つと紙吹雪，負けると雨が降ります
-- ルールは通常 (最後の1個を取ると勝ち) とミゼール (最後の1個を取ると負け) を選べます
+## Install
 
-## 実行
+```sh
+cargo install --git https://github.com/akitenkrad/rs-nim
+```
+
+Or from a clone:
 
 ```sh
 cargo run --release
 ```
 
-端末サイズは 90x26 以上が必要です．True Color (24bit) 対応の端末 (WezTerm，iTerm2，kitty，Alacritty など) を推奨します．
+A terminal of at least 90 × 26 cells is required; true colour (24-bit) is recommended.
 
-## 操作
-
-| キー | タイトル画面 | 対局中 |
-|---|---|---|
-| `Enter` / `Space` | 開始 | 選んだ石を取る |
-| `←` `→` / `Tab` | | 山を選ぶ |
-| `↑` `↓` / `1`-`9` | | 取る個数 |
-| `h` | | 必勝手を表示 (ヒント) |
-| `b` | | ニム和パネルの表示切替 |
-| `d` | 難易度 (やさしい / ふつう / 最強) | |
-| `r` | ルール (通常 / ミゼール) | |
-| `f` | 先手 (あなた / CPU) | |
-| `p` | 山の配置 (ランダム / 1-3-5-7) | |
-| `n` | | 新しい対局 |
-| `t` / `Esc` | | タイトルへ |
-| `q` / `Ctrl-C` | 終了 | 終了 |
-
-## 構成
-
-| ファイル | 役割 |
-|---|---|
-| `src/game.rs` | ルール，ニム和，必勝手 (通常・ミゼール)．UI に依存しない |
-| `src/ai.rs` | CPU の思考 (難易度ごとに必勝手を選ぶ確率が違う) と乱数 |
-| `src/app.rs` | 画面遷移，入力，CPU の思考演出，アニメーションと紙吹雪の状態 |
-| `src/ui.rs` | 描画 |
-
-## テスト
+## Quick start
 
 ```sh
-cargo test                       # 通常のテスト
-cargo test -- --ignored --nocapture   # 画面のテキストダンプと CPU との1局の通し実行
+rs-nim                                                   # play against the CPU
+rs-nim replay examples/records/classic-1357.nimrec       # replay a game record
 ```
 
-`game::tests::strategy_matches_brute_force` は，3つの山 (各 0〜6 個) の全局面について，
-`winning_move` の判定が定義どおりの全探索 (ミニマックス) と一致すること，
-そして必勝手を指した後の局面が本当に相手の必敗局面であることを，通常とミゼールの両方で確かめます．
+## Documentation
 
-## 補足
+- [Playing rs-nim](docs/gameplay.md) — rules, settings and controls
+- [Winning strategy](docs/strategy.md) — the nim-sum and Bouton's theorem, normal and misère
+- [Game records and replay](docs/replay.md) — the `.nimrec` format, replay options and recording videos
+- [Development](docs/development.md) — source layout and tests
 
-日本語環境で罫線や矢印の幅が崩れる場合は，端末の「East Asian Ambiguous 文字の幅」を 1 (半角) に設定してください．
+## License
+
+[MIT](LICENSE)
