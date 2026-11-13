@@ -34,6 +34,8 @@ rs-nim replay examples/records/classic-1357.nimrec       # replay a game record
 - [棋譜とリプレイ](docs/replay.ja.md) — `.nimrec` 形式，リプレイのオプション，録画
 - [開発者向け情報](docs/development.ja.md) — ソース構成とテスト
 
+[rs-games](https://github.com/akitenkrad/rs-games)（Rust 製ターミナルゲームのコレクション）に収録しています．
+
 ## ライセンス
 
 [MIT](LICENSE)

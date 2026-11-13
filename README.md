@@ -34,6 +34,8 @@ rs-nim replay examples/records/classic-1357.nimrec       # replay a game record
 - [Game records and replay](docs/replay.md) — the `.nimrec` format, replay options and recording videos
 - [Development](docs/development.md) — source layout and tests
 
+Part of [rs-games](https://github.com/akitenkrad/rs-games), a collection of terminal games written in Rust.
+
 ## License
 
 [MIT](LICENSE)
