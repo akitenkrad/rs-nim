@@ -25,7 +25,7 @@ const DEFAULT_REPLAY_INTERVAL_MS: u64 = 1_500;
 #[command(name = "rs-nim")]
 struct Cli {
     /// Directory used when saving records from a normal game.
-    #[arg(long, default_value = ".", global = true)]
+    #[arg(long, default_value = ".")]
     record_dir: PathBuf,
 
     /// Language used by the TUI and printed replay output.
@@ -322,5 +322,10 @@ mod tests {
         let ja = format_replay(&record, Lang::Ja);
         assert!(ja.contains("手数 1: あなた A 1"), "{ja}");
         assert!(ja.contains("勝者: あなた"), "{ja}");
+    }
+
+    #[test]
+    fn record_dir_is_not_a_replay_option() {
+        assert!(Cli::try_parse_from(["rs-nim", "replay", "game.nimrec", "--record-dir", "x"]).is_err());
     }
 }
