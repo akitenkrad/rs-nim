@@ -2,6 +2,11 @@
 name = "rs-nim"
 version = "0.1.0"
 edition = "2024"
+description = "Nim in your terminal: play against a CPU, learn the nim-sum, and replay recorded games"
+license = "MIT"
+repository = "https://github.com/akitenkrad/rs-nim"
+readme = "README.md"
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
 ratatui = "0.30"

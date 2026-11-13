@@ -154,10 +154,7 @@ pub fn winning_move(heaps: &[u32], rule: Rule) -> Option<Move> {
     }
     heaps.iter().enumerate().find_map(|(heap, &h)| {
         let target = h ^ s;
-        (target < h).then(|| Move {
-            heap,
-            take: h - target,
-        })
+        (target < h).then(|| Move { heap, take: h - target })
     })
 }
 
@@ -173,11 +170,7 @@ mod tests {
     use std::collections::HashMap;
 
     /// 定義どおりの全探索: 手番側が勝てるか．
-    fn brute_wins(
-        heaps: &mut Vec<u32>,
-        rule: Rule,
-        memo: &mut HashMap<(Vec<u32>, Rule), bool>,
-    ) -> bool {
+    fn brute_wins(heaps: &mut Vec<u32>, rule: Rule, memo: &mut HashMap<(Vec<u32>, Rule), bool>) -> bool {
         let mut key = heaps.clone();
         key.sort_unstable();
         if let Some(&v) = memo.get(&(key.clone(), rule)) {
@@ -258,10 +251,7 @@ mod tests {
     #[test]
     fn rejects_illegal_moves() {
         let mut g = Game::new(vec![2], Rule::Normal, Side::Human);
-        assert_eq!(
-            g.apply(Move { heap: 1, take: 1 }),
-            Err(MoveError::NoSuchHeap)
-        );
+        assert_eq!(g.apply(Move { heap: 1, take: 1 }), Err(MoveError::NoSuchHeap));
         assert_eq!(g.apply(Move { heap: 0, take: 0 }), Err(MoveError::ZeroTake));
         assert_eq!(g.apply(Move { heap: 0, take: 3 }), Err(MoveError::TooMany));
     }

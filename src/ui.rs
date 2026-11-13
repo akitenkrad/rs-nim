@@ -85,12 +85,7 @@ fn spinner(frame: u64) -> char {
 fn centered(area: Rect, w: u16, h: u16) -> Rect {
     let w = w.min(area.width);
     let h = h.min(area.height);
-    Rect::new(
-        area.x + (area.width - w) / 2,
-        area.y + (area.height - h) / 2,
-        w,
-        h,
-    )
+    Rect::new(area.x + (area.width - w) / 2, area.y + (area.height - h) / 2, w, h)
 }
 
 /// 全角文字を幅2として右側を空白で埋める．
@@ -107,13 +102,7 @@ fn panel(title: &str) -> Block<'_> {
 }
 
 fn key(k: &str) -> Span<'static> {
-    Span::styled(
-        format!(" {k} "),
-        Style::new()
-            .fg(c(BG))
-            .bg(c(ACCENT))
-            .add_modifier(Modifier::BOLD),
-    )
+    Span::styled(format!(" {k} "), Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD))
 }
 
 pub fn draw(frame: &mut Frame, app: &App) {
@@ -124,10 +113,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
             "端末を {MIN_WIDTH}x{MIN_HEIGHT} 以上に広げてください (現在 {}x{})",
             area.width, area.height
         );
-        frame.render_widget(
-            Paragraph::new(msg).alignment(Alignment::Center),
-            centered(area, area.width, 1),
-        );
+        frame.render_widget(Paragraph::new(msg).alignment(Alignment::Center), centered(area, area.width, 1));
         return;
     }
     match app.screen {
@@ -192,18 +178,13 @@ fn draw_title(frame: &mut Frame, app: &App, area: Rect) {
     ];
     let menu_area = centered(menu, 58, menu.height);
     frame.render_widget(
-        Paragraph::new(lines)
-            .block(panel(" 設定 ").padding(ratatui::widgets::Padding::vertical(1))),
+        Paragraph::new(lines).block(panel(" 設定 ").padding(ratatui::widgets::Padding::vertical(1))),
         menu_area,
     );
 
     if (app.frame / 18).is_multiple_of(2) {
         frame.render_widget(
-            Paragraph::new(Span::styled(
-                "Enter で開始",
-                fg(ACCENT).add_modifier(Modifier::BOLD),
-            ))
-            .alignment(Alignment::Center),
+            Paragraph::new(Span::styled("Enter で開始", fg(ACCENT).add_modifier(Modifier::BOLD))).alignment(Alignment::Center),
             footer,
         );
     }
@@ -233,9 +214,7 @@ fn draw_logo(buf: &mut Buffer, area: Rect, frame: u64) {
         let hue = col as f32 * 14.0 + r as f32 * 6.0 + frame as f32 * 4.0;
         let color = hsv(hue, 0.55, 0.97);
         for dx in 0..2 {
-            buf[(x0 + col * 2 + dx, area.y + r)]
-                .set_bg(c(color))
-                .set_char(' ');
+            buf[(x0 + col * 2 + dx, area.y + r)].set_bg(c(color)).set_char(' ');
         }
     }
 }
@@ -258,28 +237,17 @@ fn draw_wave(buf: &mut Buffer, area: Rect, frame: u64) {
 // ---------------------------------------------------------------- game
 
 fn draw_game(frame: &mut Frame, app: &App, area: Rect) {
-    let [top, mid, bottom] = Layout::vertical([
-        Constraint::Length(3),
-        Constraint::Fill(1),
-        Constraint::Length(3),
-    ])
-    .areas(area);
+    let [top, mid, bottom] = Layout::vertical([Constraint::Length(3), Constraint::Fill(1), Constraint::Length(3)]).areas(area);
     draw_status(frame, app, top);
 
-    let [board, side] =
-        Layout::horizontal([Constraint::Fill(1), Constraint::Length(36)]).areas(mid);
+    let [board, side] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(36)]).areas(mid);
     let block = panel(" 山 ");
     let inner = block.inner(board);
     frame.render_widget(block, board);
     draw_heaps(frame.buffer_mut(), app, inner);
 
     let binary_h = app.game.heaps.len() as u16 + 7;
-    let [bin, info, log] = Layout::vertical([
-        Constraint::Length(binary_h),
-        Constraint::Length(5),
-        Constraint::Fill(1),
-    ])
-    .areas(side);
+    let [bin, info, log] = Layout::vertical([Constraint::Length(binary_h), Constraint::Length(5), Constraint::Fill(1)]).areas(side);
     draw_binary(frame, app, bin);
     draw_info(frame, app, info);
     draw_log(frame, app, log);
@@ -288,19 +256,28 @@ fn draw_game(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
     let turn = app.game.to_move;
+    if let Some(replay) = app.replay() {
+        let state = if replay.paused { "一時停止" } else { "再生中" };
+        let remaining: u32 = app.game.heaps.iter().sum();
+        let spans = vec![
+            Span::styled(" N I M ", Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD)),
+            Span::styled(format!("   {state} "), fg(ACCENT).add_modifier(Modifier::BOLD)),
+            Span::styled("  手数 ", fg(DIM)),
+            Span::styled(format!("{}/{}", replay.position, replay.record.moves.len()), fg(TEXT)),
+            Span::styled("   速度 ", fg(DIM)),
+            Span::styled(format!("{}ms", replay.interval.as_millis()), fg(TEXT)),
+            Span::styled("   手番 ", fg(DIM)),
+            Span::styled(app.side_name(turn).to_string(), fg(side_color(turn)).add_modifier(Modifier::BOLD)),
+            Span::styled("   残り ", fg(DIM)),
+            Span::styled(format!("{remaining}個"), fg(TEXT)),
+        ];
+        frame.render_widget(Paragraph::new(Line::from(spans)).block(panel("")), area);
+        return;
+    }
     let mut spans = vec![
-        Span::styled(
-            " N I M ",
-            Style::new()
-                .fg(c(BG))
-                .bg(c(ACCENT))
-                .add_modifier(Modifier::BOLD),
-        ),
+        Span::styled(" N I M ", Style::new().fg(c(BG)).bg(c(ACCENT)).add_modifier(Modifier::BOLD)),
         Span::styled("   手番 ", fg(DIM)),
-        Span::styled(
-            turn.label(),
-            fg(side_color(turn)).add_modifier(Modifier::BOLD),
-        ),
+        Span::styled(app.side_name(turn), fg(side_color(turn)).add_modifier(Modifier::BOLD)),
     ];
     if app.screen == crate::app::Screen::Playing && turn == Side::Cpu {
         spans.push(Span::styled(format!(" {}", spinner(app.frame)), fg(CPU)));
@@ -411,13 +388,7 @@ fn draw_heaps(buf: &mut Buffer, app: &App, area: Rect) {
 
         let label = heap_label(i);
         let (text, style) = if selected {
-            (
-                format!("[{label}]"),
-                Style::new()
-                    .fg(c(BG))
-                    .bg(c(base))
-                    .add_modifier(Modifier::BOLD),
-            )
+            (format!("[{label}]"), Style::new().fg(c(BG)).bg(c(base)).add_modifier(Modifier::BOLD))
         } else {
             (format!(" {label} "), fg(base).add_modifier(Modifier::BOLD))
         };
@@ -438,19 +409,12 @@ fn draw_heaps(buf: &mut Buffer, app: &App, area: Rect) {
             Span::styled("   Enter で取る", fg(DIM)),
         ])
     } else if app.cpu.is_some() {
-        Line::from(Span::styled(
-            format!("CPU が考えています {}", spinner(app.frame)),
-            fg(CPU),
-        ))
+        Line::from(Span::styled(format!("CPU が考えています {}", spinner(app.frame)), fg(CPU)))
     } else {
         Line::from(Span::styled(app.message.clone(), fg(TEXT)))
     };
     let msg_area = Rect::new(area.x, msg_y, area.width, 1);
-    ratatui::widgets::Widget::render(
-        Paragraph::new(message).alignment(Alignment::Center),
-        msg_area,
-        buf,
-    );
+    ratatui::widgets::Widget::render(Paragraph::new(message).alignment(Alignment::Center), msg_area, buf);
 }
 
 fn draw_binary(frame: &mut Frame, app: &App, area: Rect) {
@@ -482,19 +446,12 @@ fn draw_binary(frame: &mut Frame, app: &App, area: Rect) {
     for (i, &h) in heaps.iter().enumerate() {
         let color = heap_color(i);
         let mut spans = vec![
-            Span::styled(
-                format!("  {}", heap_label(i)),
-                fg(color).add_modifier(Modifier::BOLD),
-            ),
+            Span::styled(format!("  {}", heap_label(i)), fg(color).add_modifier(Modifier::BOLD)),
             Span::styled(format!("{h:>3}  "), fg(TEXT)),
         ];
         for b in (0..bits).rev() {
             let bit = (h >> b) & 1;
-            let mut style = if bit == 1 {
-                fg(color).add_modifier(Modifier::BOLD)
-            } else {
-                fg(DIM)
-            };
+            let mut style = if bit == 1 { fg(color).add_modifier(Modifier::BOLD) } else { fg(DIM) };
             if odd(b) {
                 style = style.bg(c(ODD_BIT_BG));
             }
@@ -503,33 +460,23 @@ fn draw_binary(frame: &mut Frame, app: &App, area: Rect) {
         lines.push(Line::from(spans));
     }
 
-    lines.push(Line::styled(
-        format!("  {}", "-".repeat(6 + 3 * bits)),
-        fg(DIM),
-    ));
+    lines.push(Line::styled(format!("  {}", "-".repeat(6 + 3 * bits)), fg(DIM)));
     let mut xor = vec![
         Span::styled("  =", fg(TEXT).add_modifier(Modifier::BOLD)),
         Span::styled(format!("{sum:>3}  "), fg(TEXT).add_modifier(Modifier::BOLD)),
     ];
     for b in (0..bits).rev() {
         let (bit, color) = if odd(b) { (1, DANGER) } else { (0, HUMAN) };
-        xor.push(Span::styled(
-            format!("{bit:>3}"),
-            fg(color).add_modifier(Modifier::BOLD),
-        ));
+        xor.push(Span::styled(format!("{bit:>3}"), fg(color).add_modifier(Modifier::BOLD)));
     }
     lines.push(Line::from(xor));
 
     let mover = app.game.to_move;
     if !app.game.is_over() {
         let winning = game::winning_move(heaps, app.game.rule).is_some();
-        let (verdict, color) = if winning {
-            ("有利", HUMAN)
-        } else {
-            ("不利", DANGER)
-        };
+        let (verdict, color) = if winning { ("有利", HUMAN) } else { ("不利", DANGER) };
         lines.push(Line::from(vec![
-            Span::styled(format!("  手番の{}が ", mover.label()), fg(DIM)),
+            Span::styled(format!("  手番の{}が ", app.side_name(mover)), fg(DIM)),
             Span::styled(verdict, fg(color).add_modifier(Modifier::BOLD)),
         ]));
         let big = heaps.iter().filter(|&&h| h > 1).count();
@@ -541,6 +488,15 @@ fn draw_binary(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_info(frame: &mut Frame, app: &App, area: Rect) {
+    if let Some(replay) = app.replay() {
+        let state = if replay.paused { "一時停止中" } else { "自動再生中" };
+        let lines = vec![
+            Line::styled(format!("  {state}"), fg(ACCENT)),
+            Line::styled(format!("  {} / {} 手", replay.position, replay.record.moves.len()), fg(TEXT)),
+        ];
+        frame.render_widget(Paragraph::new(lines).block(panel(" リプレイ ")), area);
+        return;
+    }
     let hint_line = match app.hint {
         Hint::None => Line::styled("  h キーで必勝手を表示", fg(DIM)),
         Hint::Move(mv) => Line::from(vec![
@@ -560,8 +516,7 @@ fn draw_info(frame: &mut Frame, app: &App, area: Rect) {
         hint_line,
     ];
     frame.render_widget(
-        Paragraph::new(lines)
-            .block(panel(" ヒント (h) ").padding(ratatui::widgets::Padding::top(0))),
+        Paragraph::new(lines).block(panel(" ヒント (h) ").padding(ratatui::widgets::Padding::top(0))),
         area,
     );
 }
@@ -575,7 +530,7 @@ fn draw_log(frame: &mut Frame, app: &App, area: Rect) {
         .map(|(k, (side, text))| {
             Line::from(vec![
                 Span::styled(format!("  {:>2}. ", start + k + 1), fg(DIM)),
-                Span::styled(format!("{:<6}", side.label()), fg(side_color(*side))),
+                Span::styled(format!("{:<6}", app.side_name(*side)), fg(side_color(*side))),
                 Span::styled(text.clone(), fg(TEXT)),
             ])
         })
@@ -584,8 +539,17 @@ fn draw_log(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_help(frame: &mut Frame, app: &App, area: Rect) {
-    let items: &[(&str, &str)] = if app.screen == Screen::GameOver {
-        &[("Enter", "もう一度"), ("t", "タイトル"), ("q", "終了")]
+    let items: &[(&str, &str)] = if app.replay().is_some() {
+        &[
+            ("Space", "再生/停止"),
+            ("←→", "前後"),
+            ("Home/End", "先頭/末尾"),
+            ("+/-", "速度"),
+            ("b", "ニム和"),
+            ("q", "終了"),
+        ]
+    } else if app.screen == Screen::GameOver {
+        &[("Enter", "もう一度"), ("s", "保存"), ("t", "タイトル"), ("q", "終了")]
     } else {
         &[
             ("←→", "山"),
@@ -593,6 +557,7 @@ fn draw_help(frame: &mut Frame, app: &App, area: Rect) {
             ("Enter", "取る"),
             ("h", "ヒント"),
             ("b", "ニム和"),
+            ("s", "保存"),
             ("n", "新規"),
             ("t", "タイトル"),
             ("q", "終了"),
@@ -603,12 +568,7 @@ fn draw_help(frame: &mut Frame, app: &App, area: Rect) {
         spans.push(key(k));
         spans.push(Span::styled(format!(" {desc} "), fg(DIM)));
     }
-    frame.render_widget(
-        Paragraph::new(Line::from(spans))
-            .alignment(Alignment::Center)
-            .block(panel("")),
-        area,
-    );
+    frame.render_widget(Paragraph::new(Line::from(spans)).alignment(Alignment::Center).block(panel("")), area);
 }
 
 // ---------------------------------------------------------------- effects
@@ -629,6 +589,38 @@ fn draw_particles(buf: &mut Buffer, app: &App, area: Rect) {
 
 fn draw_result(frame: &mut Frame, app: &App, area: Rect) {
     let rect = centered(area, 50, 10);
+    if app.replay().is_some() {
+        let color = app.winner().map_or(ACCENT, side_color);
+        let t = (app.frame % 30) as f32 / 30.0;
+        let border = lerp(color, shade(color, -80), (t * std::f32::consts::TAU).sin() * 0.5 + 0.5);
+        let lines = vec![
+            Line::raw(""),
+            Line::styled(app.message.clone(), fg(color).add_modifier(Modifier::BOLD)),
+            Line::raw(""),
+            Line::styled(format!("{}   手数 {}", app.game.rule.short(), app.game.history.len()), fg(TEXT)),
+            Line::raw(""),
+            Line::raw(""),
+            Line::from(vec![
+                key("←"),
+                Span::styled(" 1手戻る   ", fg(DIM)),
+                key("Home"),
+                Span::styled(" 先頭   ", fg(DIM)),
+                key("q"),
+                Span::styled(" 終了", fg(DIM)),
+            ]),
+        ];
+        frame.render_widget(Clear, rect);
+        frame.render_widget(
+            Paragraph::new(lines).alignment(Alignment::Center).block(
+                Block::bordered()
+                    .border_type(BorderType::Double)
+                    .border_style(fg(border))
+                    .style(Style::new().bg(c(BG))),
+            ),
+            rect,
+        );
+        return;
+    }
     let human_won = app.winner() == Some(Side::Human);
     let (headline, color) = if human_won {
         ("*  あなたの勝ち！  *", HUMAN)
@@ -636,11 +628,7 @@ fn draw_result(frame: &mut Frame, app: &App, area: Rect) {
         ("CPU の勝ち", DANGER)
     };
     let t = (app.frame % 30) as f32 / 30.0;
-    let border = lerp(
-        color,
-        shade(color, -80),
-        (t * std::f32::consts::TAU).sin() * 0.5 + 0.5,
-    );
+    let border = lerp(color, shade(color, -80), (t * std::f32::consts::TAU).sin() * 0.5 + 0.5);
 
     let mut lines = vec![
         Line::raw(""),
@@ -657,10 +645,7 @@ fn draw_result(frame: &mut Frame, app: &App, area: Rect) {
         ),
     ];
     if human_won && app.hints_used == 0 && app.difficulty == crate::ai::Difficulty::Perfect {
-        lines.push(Line::styled(
-            "最強 CPU にノーヒントで勝利！",
-            fg(CPU).add_modifier(Modifier::BOLD),
-        ));
+        lines.push(Line::styled("最強 CPU にノーヒントで勝利！", fg(CPU).add_modifier(Modifier::BOLD)));
     } else {
         lines.push(Line::raw(""));
     }
@@ -690,7 +675,11 @@ fn draw_result(frame: &mut Frame, app: &App, area: Rect) {
 mod tests {
     use super::*;
     use crate::app::App;
+    use crate::game::{Move, Rule};
+    use crate::record::Record;
+    use ratatui::crossterm::event::KeyCode;
     use ratatui::{Terminal, backend::TestBackend};
+    use std::time::Duration;
 
     fn render(app: &App, w: u16, h: u16) -> String {
         let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
@@ -746,6 +735,53 @@ mod tests {
         }
     }
 
+    fn replay_record(complete: bool) -> Record {
+        Record {
+            rule: Rule::Normal,
+            first: Side::Human,
+            heaps: vec![1, 2],
+            names: ["Alice".to_string(), "Bob".to_string()],
+            moves: if complete {
+                vec![Move { heap: 0, take: 1 }, Move { heap: 1, take: 1 }, Move { heap: 1, take: 1 }]
+            } else {
+                vec![Move { heap: 0, take: 1 }]
+            },
+        }
+    }
+
+    #[test]
+    fn renders_replay_midway_at_minimum_size_with_names_and_status() {
+        let mut app = App::new_replay(replay_record(true), Duration::from_millis(1_500), true, false);
+        app.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::Right));
+
+        let screen = render(&app, 90, 26);
+
+        assert!(screen.contains("Alice"), "{screen}");
+        assert!(screen.contains("一時停止"), "{screen}");
+        assert!(screen.contains("1/3"), "{screen}");
+        assert!(screen.contains("1500ms"), "{screen}");
+    }
+
+    #[test]
+    fn renders_complete_replay_result_at_minimum_size() {
+        let mut app = App::new_replay(replay_record(true), Duration::from_millis(1_500), true, false);
+        app.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::End));
+
+        let screen = render(&app, 90, 26);
+
+        assert!(screen.contains("Alice の勝ち"), "{screen}");
+    }
+
+    #[test]
+    fn renders_unfinished_replay_end_at_minimum_size() {
+        let mut app = App::new_replay(replay_record(false), Duration::from_millis(1_500), true, false);
+        app.on_key(ratatui::crossterm::event::KeyEvent::from(KeyCode::End));
+
+        let screen = render(&app, 90, 26);
+
+        assert!(screen.contains("棋譜の終わり"), "{screen}");
+    }
+
     /// CPU 先手で1局を最後まで進められること (実時間で進むので ignore)．
     #[test]
     #[ignore]
@@ -755,8 +791,7 @@ mod tests {
         app.difficulty = crate::ai::Difficulty::Perfect;
         app.start();
         app.game.heaps = vec![2, 3];
-        let enter =
-            ratatui::crossterm::event::KeyEvent::from(ratatui::crossterm::event::KeyCode::Enter);
+        let enter = ratatui::crossterm::event::KeyEvent::from(ratatui::crossterm::event::KeyCode::Enter);
         let started = std::time::Instant::now();
         while app.screen == Screen::Playing && started.elapsed().as_secs() < 30 {
             if app.human_can_act() {
@@ -783,9 +818,7 @@ mod tests {
         app.game = crate::game::Game::new(vec![0, 1, 0], crate::game::Rule::Normal, Side::Human);
         app.cursor = 1;
         app.take = 1;
-        app.on_key(ratatui::crossterm::event::KeyEvent::from(
-            ratatui::crossterm::event::KeyCode::Enter,
-        ));
+        app.on_key(ratatui::crossterm::event::KeyEvent::from(ratatui::crossterm::event::KeyCode::Enter));
         std::thread::sleep(crate::app::REMOVE_ANIM);
         for _ in 0..20 {
             app.on_tick();
